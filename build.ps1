@@ -229,15 +229,15 @@ $pkgMat = @{ uvUp = 'packageTop'; uvDown = 'packageTop' }
 foreach ($side in 1, -1) {
     $zi = 3.5 * $side; $zo = 8.75 * $side
     $za = [Math]::Min($zi, $zo); $zb = [Math]::Max($zi, $zo)
-    foreach ($px in 6, 12, 18) {                                               # posts
+    foreach ($px in 6, 18) {                                                   # posts (nur Enden)
         $boxes += Box $px 0 ([Math]::Min($zi, $zi + 0.5 * $side)) ($px + 0.5) 17.5 ([Math]::Max($zi, $zi + 0.5 * $side)) 'shelf'
     }
     foreach ($by in 5.5, 11.5) { $boxes += Box 6 $by $za 18.5 ($by + 0.5) $zb 'shelf' }   # boards
     # packages: per level [x1, x2, height, depth]
     $levels = @(
-        @{ y = 0;  p = @(@(6.75, 10.5, 4, 4.5), @(11, 13.5, 2.5, 3.5), @(14, 18, 4.5, 4.75)) },
-        @{ y = 6;  p = @(@(6.75, 9, 2.5, 3), @(9.5, 13.5, 4, 4.5), @(14.5, 17.75, 3, 4)) },
-        @{ y = 12; p = @(@(7, 11, 3.5, 4), @(11.5, 14, 2, 3), @(14.5, 18, 5, 4.5)) }
+        @{ y = 0;  p = @(@(6.75, 11.75, 4, 4.5), @(12.5, 18, 4.5, 4.75)) },
+        @{ y = 6;  p = @(@(6.75, 12, 4, 4.5), @(13, 17.75, 3, 4)) },
+        @{ y = 12; p = @(@(7, 12.5, 3.5, 4), @(13, 18, 5, 4.5)) }
     )
     if ($side -lt 0) { $levels = @($levels[1], $levels[2], $levels[0]); $levels[0].y = 0; $levels[1].y = 6; $levels[2].y = 12 }
     foreach ($lv in $levels) {
@@ -249,7 +249,6 @@ foreach ($side in 1, -1) {
 }
 # loose packages in the aisle near the rear doors
 $boxes += Box 15.5 0 -2.5 18.5 3 0.5 'package' $pkgMat
-$boxes += Box 16 3 -2 18 5 0 'package' $pkgMat
 $boxes += Box -10 11 10 -8 14 12.5 'black'                                     # mirror R
 $boxes += Box -10 11 -12.5 -8 14 -10 'black'                                   # mirror L
 foreach ($wx in -12, 12) {
@@ -316,6 +315,25 @@ $icon.Save((Join-Path $root 'pack.png'), [System.Drawing.Imaging.ImageFormat]::P
 
 # ---------------- Zip (forward slashes) ----------------
 . (Join-Path $PSScriptRoot 'extras.ps1')
+
+# ---------------- Performance: HD-Entity-Texturen halbieren (2x2-Mittelung, 75 % weniger Grafikspeicher) ----------------
+function Halve($path) {
+    $src = [System.Drawing.Image]::FromFile($path)
+    $dst = New-Object System.Drawing.Bitmap ([int]($src.Width / 2)), ([int]($src.Height / 2)), ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $gr = [System.Drawing.Graphics]::FromImage($dst)
+    $gr.InterpolationMode = 'HighQualityBilinear'; $gr.PixelOffsetMode = 'Half'; $gr.CompositingMode = 'SourceCopy'
+    $attr = New-Object System.Drawing.Imaging.ImageAttributes; $attr.SetWrapMode('TileFlipXY')
+    $gr.DrawImage($src, (New-Object System.Drawing.Rectangle 0, 0, $dst.Width, $dst.Height), 0, 0, $src.Width, $src.Height, 'Pixel', $attr)
+    $gr.Dispose(); $src.Dispose()
+    $dst.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); $dst.Dispose()
+}
+$halve = @(Get-ChildItem (Join-Path $root 'assets\minecraft\textures\entity\villager') -Recurse -Filter *.png) +
+         @(Get-ChildItem (Join-Path $root 'assets\minecraft\textures\models\armor') -Filter *.png) +
+         @(Get-ChildItem (Join-Path $root 'assets\minecraft\textures\entity\equipment') -Recurse -Filter *.png)
+foreach ($f in $halve) {
+    $img = [System.Drawing.Image]::FromFile($f.FullName); $w = $img.Width; $img.Dispose()
+    if ($w -gt 64) { Halve $f.FullName }   # leere 64x64-Overlays bleiben
+}
 
 $zip = Join-Path $PSScriptRoot 'PrimeBlock.zip'
 if (Test-Path $zip) { Remove-Item $zip -Force }
