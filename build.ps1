@@ -315,6 +315,7 @@ $icon.Save((Join-Path $root 'pack.png'), [System.Drawing.Imaging.ImageFormat]::P
 
 # ---------------- Zip (forward slashes) ----------------
 . (Join-Path $PSScriptRoot 'extras.ps1')
+. (Join-Path $PSScriptRoot 'extras2.ps1')
 
 # ---------------- Performance: HD-Entity-Texturen halbieren (2x2-Mittelung, 75 % weniger Grafikspeicher) ----------------
 function Halve($path) {
