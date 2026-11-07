@@ -328,12 +328,16 @@ function Halve($path) {
     $gr.Dispose(); $src.Dispose()
     $dst.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); $dst.Dispose()
 }
-$halve = @(Get-ChildItem (Join-Path $root 'assets\minecraft\textures\entity\villager') -Recurse -Filter *.png) +
-         @(Get-ChildItem (Join-Path $root 'assets\minecraft\textures\models\armor') -Filter *.png) +
-         @(Get-ChildItem (Join-Path $root 'assets\minecraft\textures\entity\equipment') -Recurse -Filter *.png)
-foreach ($f in $halve) {
-    $img = [System.Drawing.Image]::FromFile($f.FullName); $w = $img.Width; $img.Dispose()
-    if ($w -gt 64) { Halve $f.FullName }   # leere 64x64-Overlays bleiben
+# Halbieren ist abgeschaltet (volle Qualitaet gewuenscht). Bei FPS-Problemen wieder einschalten:
+$halveTextures = $false
+if ($halveTextures) {
+    $halve = @(Get-ChildItem (Join-Path $root 'assets\minecraft\textures\entity\villager') -Recurse -Filter *.png) +
+             @(Get-ChildItem (Join-Path $root 'assets\minecraft\textures\models\armor') -Filter *.png) +
+             @(Get-ChildItem (Join-Path $root 'assets\minecraft\textures\entity\equipment') -Recurse -Filter *.png)
+    foreach ($f in $halve) {
+        $img = [System.Drawing.Image]::FromFile($f.FullName); $w = $img.Width; $img.Dispose()
+        if ($w -gt 64) { Halve $f.FullName }   # leere 64x64-Overlays bleiben
+    }
 }
 
 $zip = Join-Path $PSScriptRoot 'PrimeBlock.zip'
