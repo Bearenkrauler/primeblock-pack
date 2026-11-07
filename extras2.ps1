@@ -19,34 +19,84 @@ function Logo($f, $txt = '#2B2B2B', $big = 1.0) {
 }
 
 # =============== Kiste -> PrimeBlock-Lagerbox (Karton) ===============
-function ChestTex($w, $lockW, $rel) {
-    NewCanvas 64 64 4
+# Minecraft rendert das Kistenmodell ohne die bei Mobs uebliche Spiegelung. Deshalb wird alles so gezeichnet,
+# wie man es in der Welt sehen soll, und danach umgerechnet (FixChest):
+#   lange Seiten (N/S) 180 Grad gedreht, kurze Seiten (O/W) vertikal gespiegelt, Deckel-/Bodenflaeche getauscht + gespiegelt.
+# Vorderseite (mit Schloss) = Slot "back". Doppelkiste: Modell "left" hat die Naht bei +x und steht vom Spieler aus RECHTS.
+function PxRect($f) { $u = $script:cs * $script:ck; New-Object System.Drawing.Rectangle ([int]($f[0] * $u)), ([int]($f[1] * $u)), ([int]($f[2] * $u)), ([int]($f[3] * $u)) }
+function Crop($bmp, $f) { $bmp.Clone((PxRect $f), $bmp.PixelFormat) }
+function Paste($gr, $img, $f) { $gr.DrawImage($img, (PxRect $f)); $img.Dispose() }
+function RawGraphics($bmp) {
+    $gr = [System.Drawing.Graphics]::FromImage($bmp)
+    $gr.CompositingMode = 'SourceCopy'; $gr.InterpolationMode = 'NearestNeighbor'; $gr.PixelOffsetMode = 'Half'
+    $gr
+}
+function FixChest($gr, $bmp, $F) {
+    foreach ($k in 'front', 'back') { $img = Crop $bmp $F[$k]; $img.RotateFlip('Rotate180FlipNone'); Paste $gr $img $F[$k] }
+    foreach ($k in 'right', 'left') { $img = Crop $bmp $F[$k]; $img.RotateFlip('RotateNoneFlipY'); Paste $gr $img $F[$k] }
+    $tp = Crop $bmp $F.top; $bt = Crop $bmp $F.bottom
+    $tp.RotateFlip('RotateNoneFlipX'); $bt.RotateFlip('RotateNoneFlipX')
+    Paste $gr $tp $F.bottom; Paste $gr $bt $F.top
+}
+function ShippingLabel($f) {
+    Rect ($f[0] + $f[2] / 2 - 1.25) $f[1] 2.5 2.5 $tapeC                          # Klebeband vom Deckel
+    Rect ($f[0] + 2) ($f[1] + 3.5) ($f[2] - 4) 4.5 '#F4F4F4'                        # Versandetikett
+    for ($k2 = 0; $k2 -lt 3; $k2++) { Rect ($f[0] + 2.6) ($f[1] + 4.3 + $k2 * 1.2) ($f[2] - 7.5) 0.45 '#7A7A7A' }
+    Rect ($f[0] + $f[2] - 4.4) ($f[1] + 4.2) 1.8 1.8 '#2B2B2B'
+}
+# Zeichnet alles ausser den langen Seiten. Blick wie in der Welt: L.top = Deckel aussen, B.top = Innenboden.
+function ChestCommon($w, $lockW) {
     $L = Faces 0 0 $w 5 14; $B = Faces 0 19 $w 10 14; $Latch = Faces 0 0 $lockW 4 1
     FillAll $L $cardC; FillAll $B $cardC
-    FillFace $L.bottom $cardDk; FillFace $B.top $cardDk                          # Innenseiten
-    foreach ($k in 'right', 'front', 'left', 'back') { Outline $L[$k] $cardDk; Outline $B[$k] $cardDk }
-    # Klebeband ueber den Deckel und die langen Seiten
-    $t = $L.top; Rect ($t[0] + $t[2] / 2 - 1.25) $t[1] 2.5 $t[3] $tapeC
-    foreach ($k in 'front', 'back') {
-        $f = $L[$k]; Rect ($f[0] + $f[2] / 2 - 1.25) $f[1] 2.5 $f[3] $tapeC
-        $f = $B[$k]; Rect ($f[0] + $f[2] / 2 - 1.25) $f[1] 2.5 2 $tapeC
-        Logo @($f[0], ($f[1] + 1), $f[2], ($f[3] - 1))
-    }
+    FillFace $L.bottom $cardDk; FillFace $B.top '#3B2A1A'; FillFace $B.bottom $cardDk
+    $t = $L.top; Rect $t[0] ($t[1] + $t[3] / 2 - 1.25) $t[2] 2.5 $tapeC              # Klebeband laengs ueber den Deckel
     foreach ($k in 'right', 'left') {
-        $f = $B[$k]; Rect ($f[0] + 2) ($f[1] + 2) ($f[2] - 4) 4 '#F4F4F4'          # Versandetikett
-        for ($k2 = 0; $k2 -lt 3; $k2++) { Rect ($f[0] + 2.6) ($f[1] + 2.7 + $k2 * 1.1) ($f[2] - 7) 0.4 '#7A7A7A' }
-        Rect ($f[0] + $f[2] - 4.2) ($f[1] + 2.6) 1.6 1.6 '#2B2B2B'
+        $f = $L[$k]; Outline $f $cardDk; Rect ($f[0] + $f[2] / 2 - 1.25) $f[1] 2.5 $f[3] $tapeC
+        $f = $B[$k]; Outline $f $cardDk; ShippingLabel $f
     }
-    Rect ($t[0] + 1) ($t[1] + 1) 3.5 2.5 '#F4F4F4'                                # Etikett auf dem Deckel
-    FillAll $Latch $silver; FillFace $Latch.front '#7E848A'                       # Verschluss
-    SaveCanvas $rel
+    FillAll $Latch $silver; FillFace $Latch.front '#7E848A'                         # Verschluss
+    @{ L = $L; B = $B }
 }
-ChestTex 14 2 'textures\entity\chest\normal.png'
-ChestTex 15 1 'textures\entity\chest\normal_left.png'
-ChestTex 15 1 'textures\entity\chest\normal_right.png'
+$q = 2   # Qualitaetsfaktor der Kisten-Texturen
+
+# Einzelkiste
+NewCanvas 64 64 4 $q
+$cf = ChestCommon 14 2
+$t = $cf.L.top; Rect ($t[0] + 1) ($t[1] + 1) 3.5 2.5 '#F4F4F4'                     # Etikett auf dem Deckel
+foreach ($k in 'front', 'back') {
+    Outline $cf.L[$k] $cardDk
+    $f = $cf.B[$k]; Outline $f $cardDk; Logo @($f[0], ($f[1] + 1), $f[2], ($f[3] - 1))
+}
+$script:g.Dispose(); $gr = RawGraphics $script:cv
+FixChest $gr $script:cv $cf.L; FixChest $gr $script:cv $cf.B
+$gr.Dispose()
+$p = Join-Path $AssetDir 'textures\entity\chest\normal.png'; New-Item -ItemType Directory -Force (Split-Path $p) | Out-Null
+$script:cv.Save($p, [System.Drawing.Imaging.ImageFormat]::Png); $script:cv.Dispose()
+
+# Doppelkiste: eine durchgehende Vorderseite (30 breit) mit einem grossen Logo, auf beide Haelften verteilt
+NewCanvas 30 15 4 $q
+Rect 0 0 30 15 $cardC; Outline @(0, 0, 30, 5) $cardDk; Outline @(0, 5, 30, 10) $cardDk
+FitText 'PrimeBlock' '#2B2B2B' (15 * 4) ((5 + 3.6) * 4) (22 * 4) 26
+Smile (15 * 4) ((5 + 6.9) * 4) (11 * 4) (0.7 * 4)
+$script:g.Dispose(); $comp = $script:cv
+foreach ($half in 'left', 'right') {
+    NewCanvas 64 64 4 $q
+    $cf = ChestCommon 15 1
+    $script:g.Dispose(); $gr = RawGraphics $script:cv
+    $viewLeft = @{ lid = (Crop $comp @(0, 0, 15, 5)); base = (Crop $comp @(0, 5, 15, 10)) }
+    $viewRight = @{ lid = (Crop $comp @(15, 0, 15, 5)); base = (Crop $comp @(15, 5, 15, 10)) }
+    # Vorderseite (Slot "back"): Modell "left" steht vom Spieler aus rechts. Rueckseite (Slot "front"): umgekehrt.
+    if ($half -eq 'left') { $fr = $viewRight; $bk = $viewLeft } else { $fr = $viewLeft; $bk = $viewRight }
+    Paste $gr $fr.lid $cf.L.back; Paste $gr $fr.base $cf.B.back
+    Paste $gr $bk.lid $cf.L.front; Paste $gr $bk.base $cf.B.front
+    FixChest $gr $script:cv $cf.L; FixChest $gr $script:cv $cf.B
+    $gr.Dispose()
+    $script:cv.Save((Join-Path $AssetDir "textures\entity\chest\normal_$half.png"), [System.Drawing.Imaging.ImageFormat]::Png); $script:cv.Dispose()
+}
+$comp.Dispose()
 
 # =============== Fass -> Paketstapel ===============
-NewCanvas 16 16 4
+NewCanvas 16 16 4 2
 $shades = @('#C79A62', '#BB8E57', '#D2A56E')
 $bands = @(@(0, 5), @(5, 10.5), @(10.5, 16))
 for ($k = 0; $k -lt 3; $k++) {
@@ -59,20 +109,20 @@ for ($k = 0; $k -lt 3; $k++) {
 }
 Smile (11 * 4) (8.6 * 4) 16 2
 SaveCanvas 'textures\block\barrel_side.png'
-NewCanvas 16 16 4
+NewCanvas 16 16 4 2
 Rect 0 0 16 16 $cardC; Outline @(0, 0, 16, 16) $cardDk 0.5
 Rect 7 0 2 16 $tapeC; Rect 0 7 16 2 $tapeC
 Rect 1.5 1.5 4 3 '#F4F4F4'; Rect 2 2.2 3 0.4 '#7A7A7A'; Rect 2 3.2 2 0.4 '#7A7A7A'
 Smile (12 * 4) (12.5 * 4) 14 2
 SaveCanvas 'textures\block\barrel_top.png'
-NewCanvas 16 16 4
+NewCanvas 16 16 4 2
 Rect 0 0 16 16 $cardC; Rect 1.5 1.5 13 13 '#3B2A1A'                             # offener Karton
 Rect 2.5 2.5 5 4 $cardC; Rect 4.5 2.5 1 4 $tapeC
 Rect 8.5 3 5 5 '#BB8E57'; Rect 8.5 5 5 1 $tapeC
 Rect 3 8.5 6 5 '#D2A56E'; Rect 3 10.5 6 0.8 $tapeC
 Rect 10 9.5 3.5 4 $cardC
 SaveCanvas 'textures\block\barrel_top_open.png'
-NewCanvas 16 16 4
+NewCanvas 16 16 4 2
 Rect 0 0 16 16 $cardDk; Rect 7 0 2 16 '#B08A5A'
 SaveCanvas 'textures\block\barrel_bottom.png'
 
@@ -91,7 +141,7 @@ $shulkerColors = [ordered]@{
 foreach ($name in $shulkerColors.Keys) {
     $col = $shulkerColors[$name]; $colD = Shade $col 0.75
     $txt = if ($name -in 'white', 'yellow', 'light_gray', 'pink', 'lime', 'light_blue') { $navy } else { '#FFFFFF' }
-    NewCanvas 64 64 4
+    NewCanvas 64 64 4 2
     $L = Faces 0 0 16 12 16; $B = Faces 0 28 16 8 16; $Hd = Faces 0 52 6 6 6
     FillAll $L $col; FillAll $B $colD
     foreach ($k in 'right', 'front', 'left', 'back') {
@@ -270,7 +320,7 @@ SaveCanvas 'textures\item\netherite_boots.png'
 
 # =============== Werkbank -> Packstation ===============
 $bench = '#C9A46E'; $benchD = '#A9844F'
-NewCanvas 16 16 4                                                                   # Arbeitsplatte
+NewCanvas 16 16 4 2                                                                   # Arbeitsplatte
 Rect 0 0 16 16 $bench; Outline @(0, 0, 16, 16) $benchD 0.6
 Rect 1 1 8.5 8.5 '#2E7D5B'                                                          # Schneidematte
 for ($k = 1; $k -lt 4; $k++) { Rect (1 + $k * 2.1) 1 0.15 8.5 '#4F9F7C'; Rect 1 (1 + $k * 2.1) 8.5 0.15 '#4F9F7C' }
@@ -281,14 +331,14 @@ $script:g.DrawEllipse((Pn $orange 2), 56, 26, 6, 6); $script:g.DrawEllipse((Pn $
 Rect 1 11 9 4 '#F4F4F4'; Rect 1.6 11.8 6 0.5 '#7A7A7A'; Rect 1.6 13 4 0.5 '#7A7A7A'   # Lieferschein
 Smile (13 * 4) (13.2 * 4) 14 2
 SaveCanvas 'textures\block\crafting_table_top.png'
-NewCanvas 16 16 4                                                                   # Front
+NewCanvas 16 16 4 2                                                                   # Front
 Rect 0 0 16 16 $navy; Rect 0 0 16 2 $bench; Outline @(0, 2, 16, 14) $navyD 0.5
 FitText 'PACKSTATION' $white 32 18 58 10
 Smile 32 28 30 3
 Rect 1.5 9 6 6 $navyL; Rect 8.5 9 6 6 $navyL
 Rect 3.5 11.5 2 0.6 $silver; Rect 10.5 11.5 2 0.6 $silver
 SaveCanvas 'textures\block\crafting_table_front.png'
-NewCanvas 16 16 4                                                                   # Seite: Regal mit Material
+NewCanvas 16 16 4 2                                                                   # Seite: Regal mit Material
 Rect 0 0 16 16 $navy; Rect 0 0 16 2 $bench
 Rect 1 3 14 5.5 '#141C28'; Rect 1 9.5 14 5.5 '#141C28'; Rect 1 8.5 14 1 $navyL
 Rect 1.5 4.5 4 4 $cardC; Rect 6 5.5 3.5 3 '#BB8E57'
@@ -298,7 +348,7 @@ Rect 8.5 11.5 5 3.5 $cardC; Rect 10.6 11.5 0.8 3.5 $tapeC
 SaveCanvas 'textures\block\crafting_table_side.png'
 
 # =============== Amboss -> Paketwaage (neues 3D-Modell) ===============
-NewCanvas 16 16 4                                                                   # Gehaeuse-Textur
+NewCanvas 16 16 4 2                                                                   # Gehaeuse-Textur
 Rect 0 0 16 8 '#4A4F55'; Rect 0 0 16 0.5 '#6A7178'
 for ($k = 0; $k -lt 5; $k++) { Rect (2 + $k * 2.6) 3 1.4 0.5 '#33373D'; Rect (2 + $k * 2.6) 4.5 1.4 0.5 '#33373D' }
 Rect 0 7.5 16 0.5 $orange
@@ -308,7 +358,7 @@ Rect 8 8 8 4 $navy; Smile 48 42 18 2
 Rect 0 12 16 4 '#2A2D32'
 SaveCanvas 'textures\block\anvil.png'
 function ScaleTop($rel, $wear) {
-    NewCanvas 16 16 4
+    NewCanvas 16 16 4 2
     Rect 0 0 16 16 '#B9BEC4'
     for ($k = 1; $k -lt 8; $k++) { Rect ($k * 2) 0 0.15 16 '#A3A9AF'; Rect 0 ($k * 2) 16 0.15 '#A3A9AF' }
     Outline @(0, 0, 16, 16) $orange 0.8
@@ -354,23 +404,23 @@ New-Item -ItemType Directory -Force $bm | Out-Null
 
 # =============== Lesepult -> Kundenservice-Schalter ===============
 # UV-Bereiche wie im Vanilla-Modell: base (Bodenplatte), front (Saeule vorne/hinten), sides (Pult + Saeulenseiten), top (Pultflaeche)
-NewCanvas 16 16 4
+NewCanvas 16 16 4 2
 Rect 0 0 16 16 $navy; Outline @(0.5, 0.5, 15, 15) $orange 0.5
 Rect 0 6 16 2 $navyD; Rect 0 7.5 16 0.5 $orange; Rect 0 14 16 2 $navyD; Rect 0 15.5 16 0.5 $orange
 SaveCanvas 'textures\block\lectern_base.png'
-NewCanvas 16 16 4
+NewCanvas 16 16 4 2
 Rect 0 0 8 13 $navy; Outline @(0, 0, 8, 13) $navyL 0.4
 $script:g.FillEllipse((Br $prime), 8, 6, 16, 16); Rect 3.75 2.6 0.5 0.5 $white; Rect 3.75 3.4 0.5 1.8 $white   # Info-Symbol
 FitText 'SERVICE' $white 16 30 28 9
 Smile 16 42 18 2
 Rect 8 3 8 13 $navy; Outline @(8, 3, 8, 13) $navyL 0.4; Smile 48 36 16 2
 SaveCanvas 'textures\block\lectern_front.png'
-NewCanvas 16 16 4
+NewCanvas 16 16 4 2
 Rect 0 0 16 4 $orange; FitText 'KUNDENSERVICE' $navy 32 8 60 9
 Rect 0 4 16 4 $navy; Rect 0 7.5 16 0.5 $orange
 Rect 0 8 16 8 $navy; Rect 2 8 0.6 8 $navyL; Rect 13.4 8 0.6 8 $navyL
 SaveCanvas 'textures\block\lectern_sides.png'
-NewCanvas 16 16 4
+NewCanvas 16 16 4 2
 Rect 0 0 16 16 '#D7DBDF'; Outline @(0, 0, 16, 16) '#9EA4AA' 0.6
 Rect 1.5 1.5 13 0.4 '#C2C7CC'
 Smile 52 50 14 2
