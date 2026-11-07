@@ -5,13 +5,15 @@ $s = 8   # HD scale for entity / armor textures
 $skin = '#BD8B67'; $skinD = '#A8775A'; $hair = '#3B2A20'; $pants = '#3E434A'; $pantsD = '#33373D'
 $boots = '#1A1A1A'; $hivis = '#DCEB2A'; $hivisD = '#B9C71C'; $refl = '#D9DDE0'
 
-function NewCanvas($w, $h, $scale) {
-    $script:cs = $scale
-    $script:cv = New-Object System.Drawing.Bitmap ($w * $scale), ($h * $scale), ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+# $k = Qualitaetsfaktor: Bild wird $k-mal groesser gerendert, alle Zeichenbefehle bleiben gleich (ScaleTransform)
+function NewCanvas($w, $h, $scale, $k = 1) {
+    $script:cs = $scale; $script:ck = $k
+    $script:cv = New-Object System.Drawing.Bitmap ($w * $scale * $k), ($h * $scale * $k), ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     $script:g = [System.Drawing.Graphics]::FromImage($script:cv)
     $script:g.SmoothingMode = 'AntiAlias'; $script:g.TextRenderingHint = 'AntiAliasGridFit'
     $script:g.PixelOffsetMode = 'Half'
     $script:g.Clear([System.Drawing.Color]::Transparent)
+    if ($k -ne 1) { $script:g.ScaleTransform([single]$k, [single]$k) }
 }
 function SaveCanvas($rel) {
     $p = Join-Path $AssetDir $rel
