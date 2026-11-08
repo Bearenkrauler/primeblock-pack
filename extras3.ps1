@@ -184,8 +184,7 @@ WJ 'models\block\ancient_debris.json' ([ordered]@{
         west = [ordered]@{ texture = '#side'; cullface = 'west' }; east = [ordered]@{ texture = '#side'; cullface = 'east' } } })
 })
 
-# ===================== Happy Ghast: riesige Figur (EMF), siehe ghastfigur.ps1 =====================
-. (Join-Path $PSScriptRoot 'ghastfigur.ps1')
+# Happy Ghast bleibt im oeffentlichen Pack normal (keine Figur).
 
 # ===================== Richtungspfeile =====================
 function ArrowTex($rel, $base, $col, $seed) {
