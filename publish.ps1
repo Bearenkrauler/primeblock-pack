@@ -72,7 +72,7 @@ $readmeFile = Join-Path $env:TEMP 'primeblock-readme.md'
 
 Write-Host 'Lade Dateien hoch ...'
 Upload $readmeFile 'README.md'
-foreach ($f in 'build.ps1', 'extras.ps1', 'extras2.ps1', 'villagers.ps1', 'extras3.ps1', 'publish.ps1') { Upload (Join-Path $here $f) $f }
+foreach ($f in 'build.ps1', 'extras.ps1', 'extras2.ps1', 'villagers.ps1', 'extras3.ps1', 'ghastfigur.ps1', 'publish.ps1') { Upload (Join-Path $here $f) $f }
 Remove-Item $readmeFile
 
 # 3) Release mit der ZIP
