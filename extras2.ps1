@@ -127,11 +127,6 @@ Rect 0 0 16 16 $cardDk; Rect 7 0 2 16 '#B08A5A'
 SaveCanvas 'textures\block\barrel_bottom.png'
 
 # =============== Shulker-Kisten -> PrimeBlock-Versandboxen ===============
-function Shade($hex, $f) {
-    $c = C $hex
-    $r = [int][Math]::Max(0, [Math]::Min(255, $c.R * $f)); $gg = [int][Math]::Max(0, [Math]::Min(255, $c.G * $f)); $bb = [int][Math]::Max(0, [Math]::Min(255, $c.B * $f))
-    '#{0:X2}{1:X2}{2:X2}' -f $r, $gg, $bb
-}
 $shulkerColors = [ordered]@{
     '' = '#8C6A97'; 'white' = '#E4E7E8'; 'orange' = '#F07613'; 'magenta' = '#BD44B3'; 'light_blue' = '#3AAFD9'
     'yellow' = '#F8C627'; 'lime' = '#70B919'; 'pink' = '#ED8DAC'; 'gray' = '#3E4447'; 'light_gray' = '#8E8E86'
