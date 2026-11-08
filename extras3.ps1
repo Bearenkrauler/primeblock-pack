@@ -160,6 +160,30 @@ foreach ($c0 in @(@(7, 0, 2, 16, '#E7B8FF'), @(3, 5, 2, 11, '#C78BF0'), @(11, 3,
 foreach ($px in @(@(7, 3), @(8, 7), @(12, 6), @(3, 8))) { Dot $px[0] $px[1] '#FFFFFF' }
 SaveCanvas 'textures\block\amethyst_cluster.png'
 
+# ===================== Antikes Geroell: leuchtet selbst, auch in voelliger Dunkelheit =====================
+function DebrisTex($rel, $rows, $seed) {
+    PixelSheet 16 16 $seed
+    Cloth 0 0 16 16 '#2A1F2E' 0.7
+    Sprite 0 0 $rows '#27F5E0'
+    # Hellerer Kern in den Adern, damit es wie Licht wirkt
+    for ($yy = 1; $yy -lt 15; $yy++) { for ($xx = 1; $xx -lt 15; $xx++) { if ($rows[$yy][$xx] -eq '#' -and $rows[$yy][$xx - 1] -eq '#' -and $rows[$yy][$xx + 1] -eq '#') { Dot $xx $yy '#C8FFF8' } } }
+    SaveCanvas $rel
+}
+DebrisTex 'textures\block\ancient_debris_side.png' @(
+    '################', '#....##....##..#', '#.####..##..##.#', '#.#..####.##...#', '##..##..#..###.#', '#..##.###.##.#.#', '#.##..#.###..#.#', '###..##..#..####',
+    '#.#.##.####.##.#', '#.###..#..###..#', '#..#..###..#..##', '#.####.#.###.#.#', '#.#..###..#..#.#', '#...##.####..#.#', '#.###..#..####.#', '################') 700
+DebrisTex 'textures\block\ancient_debris_top.png' @(
+    '################', '#..............#', '#.############.#', '#.#..........#.#', '#.#.########.#.#', '#.#.#......#.#.#', '#.#.#.####.#.#.#', '#.#.#.#..#.#.#.#',
+    '#.#.#.#..#.#.#.#', '#.#.#.####.#.#.#', '#.#.#......#.#.#', '#.#.########.#.#', '#.#..........#.#', '#.############.#', '#..............#', '################') 701
+WJ 'models\block\ancient_debris.json' ([ordered]@{
+    parent = 'minecraft:block/block'
+    textures = [ordered]@{ particle = 'minecraft:block/ancient_debris_side'; side = 'minecraft:block/ancient_debris_side'; end = 'minecraft:block/ancient_debris_top' }
+    elements = @([ordered]@{ from = @(0, 0, 0); to = @(16, 16, 16); shade = $false; light_emission = 15; faces = [ordered]@{
+        down = [ordered]@{ texture = '#end'; cullface = 'down' }; up = [ordered]@{ texture = '#end'; cullface = 'up' }
+        north = [ordered]@{ texture = '#side'; cullface = 'north' }; south = [ordered]@{ texture = '#side'; cullface = 'south' }
+        west = [ordered]@{ texture = '#side'; cullface = 'west' }; east = [ordered]@{ texture = '#side'; cullface = 'east' } } })
+})
+
 # ===================== Richtungspfeile =====================
 function ArrowTex($rel, $base, $col, $seed) {
     PixelSheet 16 16 $seed
