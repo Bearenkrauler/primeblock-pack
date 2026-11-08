@@ -184,6 +184,62 @@ WJ 'models\block\ancient_debris.json' ([ordered]@{
         west = [ordered]@{ texture = '#side'; cullface = 'west' }; east = [ordered]@{ texture = '#side'; cullface = 'east' } } })
 })
 
+# ===================== Happy Ghast: riesige Figur (EMF), der Kopf ist die Sitzflaeche =====================
+PixelSheet 64 64 800
+$gSkin = '#D9A98A'; $gHair = '#6B4A30'; $gPlaid = '#7F8F66'; $gTee = '#26385E'; $gJeans = '#3F4A5C'; $gShoe = '#2A2522'
+function PlaidFace($f) {
+    Cloth $f[0] $f[1] $f[2] $f[3] $gPlaid 0.3
+    for ($px = 2; $px -lt $f[2]; $px += 4) { VL ($f[0] + $px) $f[1] $f[3] '#9A8070' }
+    for ($py = 2; $py -lt $f[3]; $py += 4) { HL $f[0] ($f[1] + $py) $f[2] '#66754F' }
+}
+# Kopf 14 x 10 x 14
+$GH = Faces 0 0 14 10 14
+foreach ($kk in 'right', 'front', 'left', 'back') { ClothF $GH[$kk] $gSkin 0.4 }
+ClothF $GH.top $gHair 0.7; ClothF $GH.bottom (Shade $gSkin 0.75) 0.3
+foreach ($kk in 'right', 'front', 'left', 'back') { Cloth $GH[$kk][0] $GH[$kk][1] 14 2 $gHair 0.7 }
+Cloth $GH.back[0] ($GH.back[1] + 2) 14 4 $gHair 0.7
+Cloth $GH.right[0] ($GH.right[1] + 2) 7 3 $gHair 0.7; Cloth ($GH.left[0] + 7) ($GH.left[1] + 2) 7 3 $gHair 0.7
+$fx0 = $GH.front[0]; $fy0 = $GH.front[1]
+HL $fx0 ($fy0 + 2) 3 $gHair; HL ($fx0 + 11) ($fy0 + 2) 3 $gHair                     # Haaransatz
+# Sanft geschwungene, hellere Augenbrauen wirken freundlich statt boese
+HL ($fx0 + 3) ($fy0 + 3) 3 '#8A6A4C'; HL ($fx0 + 8) ($fy0 + 3) 3 '#8A6A4C'
+HL ($fx0 + 3) ($fy0 + 4) 2 '#F4F1E8'; Dot ($fx0 + 4) ($fy0 + 4) '#3B2A20'; HL ($fx0 + 9) ($fy0 + 4) 2 '#F4F1E8'; Dot ($fx0 + 9) ($fy0 + 4) '#3B2A20'
+HL ($fx0 + 6) ($fy0 + 5) 2 (Shade $gSkin 0.82)                                      # Nase
+HL ($fx0 + 1) ($fy0 + 6) 2 '#E0A08A'; HL ($fx0 + 11) ($fy0 + 6) 2 '#E0A08A'         # Wangen
+Dot ($fx0 + 3) ($fy0 + 6) '#8A4B3A'; Dot ($fx0 + 10) ($fy0 + 6) '#8A4B3A'; HL ($fx0 + 4) ($fy0 + 7) 6 '#8A4B3A'   # breites Laecheln
+HL ($fx0 + 2) ($fy0 + 9) 10 (Shade $gSkin 0.85)                                     # Kinn
+# Oberkoerper 18 x 11 x 10: offenes Karohemd ueber dunkelblauem T-Shirt
+$GB = Faces 0 24 18 11 10
+foreach ($kk in 'right', 'front', 'left', 'back', 'top', 'bottom') { PlaidFace $GB[$kk] }
+$bfx = $GB.front[0]; $bfy = $GB.front[1]
+Cloth ($bfx + 6) $bfy 6 11 $gTee 0.4                                                # T-Shirt
+VL ($bfx + 5) $bfy 11 '#56643F'; VL ($bfx + 12) $bfy 11 '#56643F'
+foreach ($px0 in 1, 13) { HL ($bfx + $px0) ($bfy + 2) 4 '#A0AE82'; HL ($bfx + $px0) ($bfy + 5) 4 '#56643F'; VL ($bfx + $px0) ($bfy + 3) 2 '#56643F'; VL ($bfx + $px0 + 3) ($bfy + 3) 2 '#56643F' }   # Brusttaschen
+foreach ($by in 1, 4, 7, 10) { Dot ($bfx + 5) ($bfy + $by) '#D8D8D0' }              # Knoepfe
+# Arm 5 x 11 x 6
+$GA = Faces 0 45 5 11 6
+foreach ($kk in 'right', 'front', 'left', 'back', 'top') { PlaidFace $GA[$kk] }
+ClothF $GA.bottom $gSkin 0.3
+foreach ($kk in 'right', 'front', 'left', 'back') { Cloth $GA[$kk][0] ($GA[$kk][1] + 9) $GA[$kk][2] 2 $gSkin 0.3 }
+# Bein 8 x 5 x 9: Hose und Schuhe
+$GL = Faces 22 45 8 5 9
+foreach ($kk in 'right', 'front', 'left', 'back') { ClothF $GL[$kk] $gJeans 0.5; Cloth $GL[$kk][0] ($GL[$kk][1] + 3) $GL[$kk][2] 2 $gShoe 0.3 }
+ClothF $GL.top $gJeans 0.4; ClothF $GL.bottom $gShoe 0.3
+SaveCanvas 'textures\entity\primeblock_giant.png'
+
+function GiantBox($x, $y, $z, $wd, $ht, $dp, $u, $v) { [ordered]@{ coordinates = @($x, $y, $z, $wd, $ht, $dp); textureOffset = @($u, $v) } }
+$giantParts = New-Object System.Collections.ArrayList
+[void]$giantParts.Add([ordered]@{ part = 'body'; id = 'body'; invertAxis = 'xy'; translate = @(0, -8, 0); boxes = @(
+    (GiantBox -7 6 -7 14 10 14 0 0), (GiantBox -9 -5 -5 18 11 10 0 24),
+    (GiantBox -14 -5 -3 5 11 6 0 45), (GiantBox 9 -5 -3 5 11 6 0 45),
+    (GiantBox -8.5 -10 -4.5 8 5 9 22 45), (GiantBox 0.5 -10 -4.5 8 5 9 22 45)) })
+foreach ($empty in @('inner_body') + (0..8 | % { "tentacle$_" })) { [void]$giantParts.Add([ordered]@{ part = $empty; id = $empty; invertAxis = 'xy'; translate = @(0, 0, 0); boxes = @() }) }
+WJ 'optifine\cem\happy_ghast.jem' ([ordered]@{ credit = 'PrimeBlock'; texture = 'textures/entity/primeblock_giant.png'; textureSize = @(64, 64); models = $giantParts })
+# Geschirr und Brille ausblenden, Reiten funktioniert weiter
+$noHarness = New-Object System.Collections.ArrayList
+foreach ($empty in 'harness', 'goggles') { [void]$noHarness.Add([ordered]@{ part = $empty; id = $empty; invertAxis = 'xy'; translate = @(0, 0, 0); boxes = @() }) }
+WJ 'optifine\cem\happy_ghast_harness.jem' ([ordered]@{ credit = 'PrimeBlock'; textureSize = @(64, 64); models = $noHarness })
+
 # ===================== Richtungspfeile =====================
 function ArrowTex($rel, $base, $col, $seed) {
     PixelSheet 16 16 $seed
